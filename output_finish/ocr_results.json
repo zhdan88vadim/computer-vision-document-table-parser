@@ -1,0 +1,141 @@
+[
+  {
+    "box_index": 1,
+    "bbox": {
+      "x": 331,
+      "y": 55,
+      "width": 642,
+      "height": 55
+    },
+    "text": "Комиссии Архитектурного совета по формированию городской седы",
+    "confidence": 0.9379216247261515,
+    "status": "recognized",
+    "fragments": 2
+  },
+  {
+    "box_index": 2,
+    "bbox": {
+      "x": 194,
+      "y": 122,
+      "width": 161,
+      "height": 28
+    },
+    "text": "11.07.00",
+    "confidence": 0.5840286036278163,
+    "status": "recognized",
+    "fragments": 1
+  },
+  {
+    "box_index": 3,
+    "bbox": {
+      "x": 558,
+      "y": 122,
+      "width": 122,
+      "height": 29
+    },
+    "text": "",
+    "confidence": 0.0,
+    "status": "no_text"
+  },
+  {
+    "box_index": 4,
+    "bbox": {
+      "x": 878,
+      "y": 122,
+      "width": 95,
+      "height": 28
+    },
+    "text": "",
+    "confidence": 0.0,
+    "status": "no_text"
+  },
+  {
+    "box_index": 5,
+    "bbox": {
+      "x": 317,
+      "y": 163,
+      "width": 657,
+      "height": 55
+    },
+    "text": "ТЭО строительства пристройки БНК к зданию средней общеобразоватегьной школы Ng1650",
+    "confidence": 0.9170770568211466,
+    "status": "recognized",
+    "fragments": 2
+  },
+  {
+    "box_index": 6,
+    "bbox": {
+      "x": 317,
+      "y": 221,
+      "width": 657,
+      "height": 34
+    },
+    "text": "Микоян К.С, Макарова РД; Мещерский B.B",
+    "confidence": 0.8910066792423811,
+    "status": "recognized",
+    "fragments": 3
+  },
+  {
+    "box_index": 7,
+    "bbox": {
+      "x": 317,
+      "y": 257,
+      "width": 657,
+      "height": 34
+    },
+    "text": "МОСКОМАРТ , мастерская NP",
+    "confidence": 0.6463867811468501,
+    "status": "recognized",
+    "fragments": 3
+  },
+  {
+    "box_index": 8,
+    "bbox": {
+      "x": 316,
+      "y": 299,
+      "width": 658,
+      "height": 33
+    },
+    "text": "ЗАО \"ТЭМ-Строй'",
+    "confidence": 0.9345380624608821,
+    "status": "recognized",
+    "fragments": 1
+  },
+  {
+    "box_index": 9,
+    "bbox": {
+      "x": 317,
+      "y": 366,
+      "width": 657,
+      "height": 34
+    },
+    "text": "Зайцых BА:",
+    "confidence": 0.7513966492402705,
+    "status": "recognized",
+    "fragments": 1
+  },
+  {
+    "box_index": 10,
+    "bbox": {
+      "x": 316,
+      "y": 402,
+      "width": 657,
+      "height": 35
+    },
+    "text": "",
+    "confidence": 0.0,
+    "status": "no_text"
+  },
+  {
+    "box_index": 11,
+    "bbox": {
+      "x": 316,
+      "y": 444,
+      "width": 658,
+      "height": 34
+    },
+    "text": "",
+    "confidence": 0.0,
+    "status": "no_text"
+  }
+]
