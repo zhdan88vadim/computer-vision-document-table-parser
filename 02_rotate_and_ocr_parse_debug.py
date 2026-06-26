@@ -127,20 +127,14 @@ def save_mapped_results(mapped_data, output_dir="./output_finish/"):
     
     return mapped_data
 
-def recognize_boxes_with_easyocr(image_path, boxes_coords, output_dir="./output_finish/", padding=15):
+def recognize_boxes_with_easyocr(image, boxes_coords, output_dir="./output_finish/", padding=15):
     """
     Распознает текст в найденных боксах с помощью EasyOCR
     """
     # Инициализируем EasyOCR
     print("\n🔍 Инициализация EasyOCR (русский + английский)...")
     reader = easyocr.Reader(['ru', 'en'], gpu=False, verbose=False)
-    
-    # Загружаем изображение
-    image = cv2.imread(image_path)
-    if image is None:
-        print(f"❌ Не удалось загрузить изображение: {image_path}")
-        return None
-    
+
     h, w = image.shape[:2]
     results = []
     
@@ -216,18 +210,11 @@ def convert_numpy_types(obj):
         return obj.tolist()
     raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
 
-def visualize_ocr_results(image_path, boxes_coords, ocr_results, output_dir="./output_finish/"):
+def visualize_ocr_results(image, boxes_coords, ocr_results, output_dir="./output_finish/"):
     """
     Визуализирует результаты распознавания на изображении
     """
-    # Загружаем изображение
-    img = cv2.imread(image_path)
-    if img is None:
-        print(f"❌ Не удалось загрузить изображение: {image_path}")
-        return
-    
-    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    pil_img = Image.fromarray(img_rgb)
+    pil_img = Image.fromarray(image)
     draw = ImageDraw.Draw(pil_img)
     
     # Загружаем шрифт
@@ -246,16 +233,24 @@ def visualize_ocr_results(image_path, boxes_coords, ocr_results, output_dir="./o
         color = (0, 255, 0) if result['text'] else (255, 0, 0)
         draw.rectangle([(x1, y1), (x2, y2)], outline=color, width=2)
         
-        # Добавляем номер
-        draw.text((x1, y1-20), f"#{i+1}", fill=(255, 255, 0), font=font)
-        
-        # Добавляем распознанный текст
+        # Формируем текст для отображения
         if result['text']:
-            text = f"'{result['text']}' ({result['confidence']:.2f})"
-            # Рисуем фон для текста
-            bbox = draw.textbbox((x1, y2+5), text, font=font)
-            draw.rectangle([(x1, y2+5), (bbox[2]+5, bbox[3]+5)], fill=(255, 255, 255, 200))
-            draw.text((x1+2, y2+5), text, fill=(0, 0, 0), font=font)
+            label = f"#{i+1}: {result['text']} ({result['confidence']:.2f})"
+        else:
+            label = f"#{i+1}: текст не найден"
+        
+        # Размещаем текст сверху
+        # Получаем размеры текста
+        bbox = draw.textbbox((0, 0), label, font=font)
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
+        
+        # Рисуем фон для текста
+        draw.rectangle([(x1, y1 - text_height), (x1 + text_width + 2, y1+10)], 
+                    fill=(200, 200, 200))
+        
+        # Рисуем текст
+        draw.text((x1, y1-10), label, fill=(0, 0, 0), font=font)
     
     # Сохраняем результат
     img_result = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
@@ -453,7 +448,7 @@ def process_image_with_ocr(img_path, dilation_size=3, std_multiplier=1.0, min_si
     if boxes_coords:
         # Распознаем текст
         ocr_results = recognize_boxes_with_easyocr(
-            aligned_path,  # Используем выравненное изображение
+            img_aligned,  # Используем выравненное изображение
             boxes_coords,
             output_dir=output_dir,
             padding=ocr_padding
@@ -461,7 +456,7 @@ def process_image_with_ocr(img_path, dilation_size=3, std_multiplier=1.0, min_si
         
         # Визуализируем результаты OCR
         visualize_ocr_results(
-            aligned_path,
+            img_aligned,
             boxes_coords,
             ocr_results,
             output_dir=output_dir
