@@ -16,10 +16,14 @@ WORKDIR /app
 
 # Copy requirements and install Python packages
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy requirements and install with PERMANENT cache
+RUN --mount=type=cache,target=/root/.cache/pip,id=permanent_pip_cache,sharing=locked \
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy all Python files
-COPY *.py .
+COPY app.py .
 
 # Command to run
-CMD ["python", "02_rotate_and_ocr_parse_debug.py"]
+CMD ["python", "app.py"]

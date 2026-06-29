@@ -9,4 +9,4 @@ services:
       - ./input_images:/app/input_images
       - ./test_data:/app/test_data
       - ./output_finish:/app/output_finish
-      - .:/app/raw_dir
+      # - .:/app/raw_dir
