@@ -1,0 +1,11 @@
+opencv-python-headless==4.13.0.92
+numpy==2.2.6
+matplotlib==3.10.6
+scipy==1.15.3
+easyocr==1.7.2
+pillow==11.3.0
+fuzzywuzzy==0.18.0
+
+# for EasyOCR
+torch==2.10.0
+torchvision==0.25.0
