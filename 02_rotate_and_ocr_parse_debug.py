@@ -116,11 +116,11 @@ def map_boxes_to_fields(ocr_results, field_mapping):
     
     return mapped_data
 
-def save_mapped_results(mapped_data, output_dir="./output_finish/"):
+def save_mapped_results(img_name, mapped_data, output_dir="./output_finish/"):
     """
     Сохраняет маппированные результаты в JSON
     """
-    json_path = os.path.join(output_dir, "mapped_results.json")
+    json_path = os.path.join(output_dir, f"{img_name}_mapped_results.json")
     
     with open(json_path, 'w', encoding='utf-8') as f:
         json.dump(mapped_data, f, indent=2, ensure_ascii=False)
@@ -211,7 +211,7 @@ def convert_numpy_types(obj):
         return obj.tolist()
     raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
 
-def visualize_ocr_results(image, boxes_coords, ocr_results, output_dir="./output_finish/"):
+def visualize_ocr_results(img_name, image, boxes_coords, ocr_results, output_dir="./output_finish/"):
     """
     Визуализирует результаты распознавания на изображении
     """
@@ -255,13 +255,12 @@ def visualize_ocr_results(image, boxes_coords, ocr_results, output_dir="./output
     
     # Сохраняем результат
     img_result = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
-    output_path = os.path.join(output_dir, "ocr_visualization.jpg")
+    output_path = os.path.join(output_dir, f"{img_name}_ocr_visualization.jpg")
     cv2.imwrite(output_path, img_result)
     print(f"✓ Визуализация сохранена: {output_path}")
 
 def load_expected_data_for_image(image_name, expected_dir = "./test_data/expected"):
-    name = Path(image_name).stem
-    json_path = Path(expected_dir) / f"{name}.json"
+    json_path = Path(expected_dir) / f"{image_name}.json"
     if not json_path.exists():
         raise FileNotFoundError(f"Файл ожидаемых результатов не найден: {json_path}")
     
@@ -507,13 +506,17 @@ def process_image_with_ocr(img_path, dilation_size=3, std_multiplier=1.0, min_si
         
         # Визуализируем результаты OCR
         visualize_ocr_results(
+            img_name,
             img_aligned,
             boxes_coords,
             ocr_results,
             output_dir=output_dir
         )
 
-    # Определяем маппинг (настраивается вручную)
+        # extra fields
+        extra_fields = {'Рассмотрение на рабочей комиссии': ''}
+
+        # Определяем маппинг (настраивается вручную)
         field_mapping = {
             1: 'Выписка из протокола',
             2: 'дата',
@@ -523,19 +526,19 @@ def process_image_with_ocr(img_path, dilation_size=3, std_multiplier=1.0, min_si
             6: 'Авторы проекта',
             7: 'Генеральная проектная организация',
             8: 'Застройщик',
-            9: 'Рассмотрение на рабочей комиссии',
-            10: 'Референт',
-            11: 'Докладчик',
-            12: 'Выступили'
+            9: 'Референт',
+            10: 'Докладчик',
+            11: 'Выступили'
         }
         
         # Применяем маппинг
         mapped_data = map_boxes_to_fields(ocr_results, field_mapping)
+        mapped_data.update(extra_fields)
         
         # Сохраняем маппированные результаты
-        save_mapped_results(mapped_data, output_dir)
+        save_mapped_results(img_name, mapped_data, output_dir)
 
-        quick_test(img_path, mapped_data)
+        quick_test(img_name, mapped_data)
         
         # Выводим статистику OCR
         recognized = sum(1 for r in ocr_results if r['status'] == 'recognized')
@@ -602,14 +605,14 @@ def process_image_with_ocr(img_path, dilation_size=3, std_multiplier=1.0, min_si
     return boxes_coords, ocr_results
 
 
-def quick_test(image_path, actual_data, expected_dir="./test_data/expected/", min_score=80):
+def quick_test(img_name, actual_data, expected_dir="./test_data/expected/", min_score=80):
     """Быстрый тест с сохранением и выводом"""
 
     try:
-        expected_data = load_expected_data_for_image(image_path, expected_dir)
+        expected_data = load_expected_data_for_image(img_name, expected_dir)
         success, errors, details = compare_results_fuzzy(actual_data, expected_data, min_score)
         
-        print(f"\n{'✅' if success else '❌'} Тест {Path(image_path).name}: {'ПРОЙДЕН' if success else 'НЕ ПРОЙДЕН'}")
+        print(f"\n{'✅' if success else '❌'} Тест {img_name}: {'ПРОЙДЕН' if success else 'НЕ ПРОЙДЕН'}")
         
         if errors:
             print("   ОШИБКИ:")
@@ -632,7 +635,7 @@ def quick_test(image_path, actual_data, expected_dir="./test_data/expected/", mi
         
         # Сохраняем результат
         result = {
-            "image": image_path,
+            "image": img_name,
             "success": success,
             "min_score": min_score,
             "errors": errors,
@@ -644,7 +647,7 @@ def quick_test(image_path, actual_data, expected_dir="./test_data/expected/", mi
             }
         }
         
-        output_path = f"./test_data/output/{Path(image_path).stem}_result.json"
+        output_path = f"./test_data/output/{img_name}_result.json"
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(result, f, indent=2, ensure_ascii=False)
         
@@ -662,12 +665,12 @@ def quick_test(image_path, actual_data, expected_dir="./test_data/expected/", mi
 # ==================== ЗАПУСК ============
 if __name__ == "__main__":
     # Параметры обработки
-    input_image = "/media/vadim/1TB_SSD/my_github/computer-vision-document-table-parser/input_images/3.jpg"
+    input_image = "./input_images/1.jpg"
     
     # Настройки для извлечения блоков
     dilation_size = 7       
     std_multiplier = 1.0    
-    min_size = 300          
+    min_size = 500          
     ocr_padding = 10        # Отступы для OCR
     
     # Очищаем выходную папку
@@ -688,7 +691,7 @@ if __name__ == "__main__":
     print("\n✨ ОБРАБОТКА ЗАВЕРШЕНА ✨")
     print(f"📁 Результаты сохранены в папке: ./output_finish/")
     print(f"   - ocr_results.json - результаты распознавания")
-    print(f"   - ocr_visualization.jpg - визуализация с текстом")
+    print(f"   - {Path(input_image).stem}_ocr_visualization.jpg - визуализация с текстом")
     print(f"   - {Path(input_image).stem}_aligned.jpg - выравненное изображение")
     print(f"   - {Path(input_image).stem}_boxes.jpg - найденные боксы")
     print(f"   - debug/ - все промежуточные этапы")
