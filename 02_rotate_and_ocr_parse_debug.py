@@ -9,6 +9,7 @@ import shutil
 import json
 import easyocr
 from PIL import Image, ImageDraw, ImageFont
+from fuzzywuzzy import fuzz
 
 def deskew_image(img):
     """
@@ -45,9 +46,9 @@ def deskew_image(img):
         angle = 90 + angle
     
     # Если угол слишком мал, не поворачиваем
-    if abs(angle) < 0.5:
-        print(f"Изображение уже ровное, угол наклона: {angle:.2f} градусов")
-        return img
+    # if abs(angle) < 0.5:
+    #     print(f"Изображение уже ровное, угол наклона: {angle:.2f} градусов")
+    #     return img
     
     print(f"Обнаружен угол наклона: {angle:.2f} градусов")
     
@@ -257,6 +258,56 @@ def visualize_ocr_results(image, boxes_coords, ocr_results, output_dir="./output
     output_path = os.path.join(output_dir, "ocr_visualization.jpg")
     cv2.imwrite(output_path, img_result)
     print(f"✓ Визуализация сохранена: {output_path}")
+
+def load_expected_data_for_image(image_name, expected_dir = "./test_data/expected"):
+    name = Path(image_name).stem
+    json_path = Path(expected_dir) / f"{name}.json"
+    if not json_path.exists():
+        raise FileNotFoundError(f"Файл ожидаемых результатов не найден: {json_path}")
+    
+    with open(json_path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+def compare_results_fuzzy(actual, expected, min_score=80):
+    """Сравнение с fuzzywuzzy"""
+    errors = []
+    details = {}
+    
+    for key in expected:
+        if key not in actual:
+            errors.append(f"Отсутствует поле: {key}")
+            details[key] = {'status': 'missing'}
+            continue
+        
+        exp = expected[key] or ""
+        act = actual[key] or ""
+        
+        # Если оба пустые - ок
+        if not exp and not act:
+            details[key] = {'status': 'match', 'score': 100}
+            continue
+        
+        # Вычисляем схожесть разными способами
+        score_ratio = fuzz.ratio(act, exp)
+        score_partial = fuzz.partial_ratio(act, exp)
+        score_token = fuzz.token_sort_ratio(act, exp)
+        
+        # Берем максимальный
+        score = max(score_ratio, score_partial, score_token)
+        
+        details[key] = {
+            'status': 'match' if score >= min_score else 'mismatch',
+            'score': score,
+            'expected': exp,
+            'actual': act
+        }
+        
+        if score < min_score:
+            errors.append(
+                f"{key}: ожидалось '{exp}', получено '{act}' (схожесть: {score}%)"
+            )
+    
+    return len(errors) == 0, errors, details
 
 def process_image_with_ocr(img_path, dilation_size=3, std_multiplier=1.0, min_size=200, 
                            output_dir="./output_finish/", show_plots=True, save_images=True,
@@ -483,6 +534,8 @@ def process_image_with_ocr(img_path, dilation_size=3, std_multiplier=1.0, min_si
         
         # Сохраняем маппированные результаты
         save_mapped_results(mapped_data, output_dir)
+
+        quick_test(img_path, mapped_data)
         
         # Выводим статистику OCR
         recognized = sum(1 for r in ocr_results if r['status'] == 'recognized')
@@ -548,15 +601,73 @@ def process_image_with_ocr(img_path, dilation_size=3, std_multiplier=1.0, min_si
     
     return boxes_coords, ocr_results
 
+
+def quick_test(image_path, actual_data, expected_dir="./test_data/expected/", min_score=80):
+    """Быстрый тест с сохранением и выводом"""
+
+    try:
+        expected_data = load_expected_data_for_image(image_path, expected_dir)
+        success, errors, details = compare_results_fuzzy(actual_data, expected_data, min_score)
+        
+        print(f"\n{'✅' if success else '❌'} Тест {Path(image_path).name}: {'ПРОЙДЕН' if success else 'НЕ ПРОЙДЕН'}")
+        
+        if errors:
+            print("   ОШИБКИ:")
+            for error in errors:
+                print(f"   • {error}")
+        
+        # Статистика
+        total = len(details)
+        matches = sum(1 for d in details.values() if d['status'] == 'match')
+        mismatches = sum(1 for d in details.values() if d['status'] == 'mismatch')
+        
+        print(f"\n   📊 СТАТИСТИКА:")
+        print(f"   • Всего полей: {total}")
+        print(f"   • Совпадает: {matches}")
+        print(f"   • Не совпадает: {mismatches}")
+        
+        if matches > 0:
+            avg_score = sum(d['score'] for d in details.values() if d['status'] == 'match') / matches
+            print(f"   • Средняя схожесть: {avg_score:.1f}%")
+        
+        # Сохраняем результат
+        result = {
+            "image": image_path,
+            "success": success,
+            "min_score": min_score,
+            "errors": errors,
+            "details": details,
+            "stats": {
+                "total": total,
+                "matches": matches,
+                "mismatches": mismatches
+            }
+        }
+        
+        output_path = f"./test_data/output/{Path(image_path).stem}_result.json"
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(result, f, indent=2, ensure_ascii=False)
+        
+        print(f"\n💾 Результат сохранен: {output_path}")
+        
+        return success
+        
+    except Exception as e:
+        print(f"❌ Ошибка: {e}")
+        return False
+
+
+
+
 # ==================== ЗАПУСК ============
 if __name__ == "__main__":
     # Параметры обработки
-    input_image = "/media/vadim/1TB_SSD/my_github/computer-vision-document-table-parser/input_images/1.jpg"
+    input_image = "/media/vadim/1TB_SSD/my_github/computer-vision-document-table-parser/input_images/3.jpg"
     
     # Настройки для извлечения блоков
     dilation_size = 7       
     std_multiplier = 1.0    
-    min_size = 200          
+    min_size = 300          
     ocr_padding = 10        # Отступы для OCR
     
     # Очищаем выходную папку

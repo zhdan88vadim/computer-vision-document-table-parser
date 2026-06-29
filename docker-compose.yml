@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    image: comp-vision-table-parser:latest
+    volumes:
+      - ./input_images:/app/input_images
+      - ./test_data:/app/test_data
+      - ./output_finish:/app/output_finish
+    # Or with absolute paths:
+    # - /home/user/project/input_images:/app/input_images
