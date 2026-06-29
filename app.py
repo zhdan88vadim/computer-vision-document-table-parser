@@ -736,23 +736,3 @@ if __name__ == "__main__":
                   min_size=min_size,
                   ocr_padding=ocr_padding
                   )
-
-    # Запуск полной обработки
-    # boxes, ocr_results = process_image_with_ocr(
-    #     img_path=input_image,
-    #     dilation_size=dilation_size,
-    #     std_multiplier=std_multiplier,
-    #     min_size=min_size,
-    #     output_dir="./output_finish/",
-    #     show_plots=True,
-    #     save_images=True,
-    #     ocr_padding=ocr_padding
-    # )
-    
-    # print("\n✨ ОБРАБОТКА ЗАВЕРШЕНА ✨")
-    # print(f"📁 Результаты сохранены в папке: ./output_finish/")
-    # print(f"   - ocr_results.json - результаты распознавания")
-    # print(f"   - {Path(input_image).stem}_ocr_visualization.jpg - визуализация с текстом")
-    # print(f"   - {Path(input_image).stem}_aligned.jpg - выравненное изображение")
-    # print(f"   - {Path(input_image).stem}_boxes.jpg - найденные боксы")
-    # print(f"   - debug/ - все промежуточные этапы")
