@@ -10,5 +10,3 @@ services:
       - ./test_data:/app/test_data
       - ./output_finish:/app/output_finish
       - .:/app/raw_dir
-    # Or with absolute paths:
-    # - /home/user/project/input_images:/app/input_images
