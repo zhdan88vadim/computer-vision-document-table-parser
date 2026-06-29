@@ -15,3 +15,8 @@ pip install scipy easyocr
 
 /mnt/ntfs/learn_ML/test_classes/Тестовое Python ML,CV/Тестовое_CV/cv/easyocr_result.jpg
 
+
+
+
+
+docker-compose up
