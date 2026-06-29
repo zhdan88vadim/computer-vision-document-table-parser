@@ -659,13 +659,64 @@ def quick_test(img_name, actual_data, expected_dir="./test_data/expected/", min_
         print(f"❌ Ошибка: {e}")
         return False
 
+def batch_process(input_dir, output_dir, ocr_padding,
+                  dilation_size=3, std_multiplier=1.0, min_size=500,
+                  show_plots=False, save_images=True):
+    """
+    Обработка всех изображений в папке
+    """
+    input_path = Path(input_dir)
+    if not input_path.exists():
+        print(f"Ошибка: папка {input_dir} не существует")
+        return
+    
+    # Поддерживаемые форматы
+    extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff'}
+    image_files = [f for f in input_path.iterdir() if f.suffix.lower() in extensions]
+    
+    if not image_files:
+        print(f"В папке {input_dir} нет изображений")
+        return
+    
+    print(f"Найдено {len(image_files)} изображений для обработки")
+    print("="*60)
+    
+    results = {}
+    for img_file in image_files:
+        print(f"\n🔄 Обработка: {img_file.name}")
+        boxes_img, boxes_coords = process_image_with_ocr(
+            img_path=img_file,
+            dilation_size=dilation_size,
+            std_multiplier=std_multiplier,
+            min_size=min_size,
+            output_dir=output_dir,
+            show_plots=show_plots,
+            save_images=save_images,
+            ocr_padding=ocr_padding
+        )
+        results[img_file.name] = {
+            'boxes_img': boxes_img,
+            'boxes_coords': boxes_coords,
+            'num_boxes': len(boxes_coords) if boxes_coords else 0
+        }
+    
+    # Общая статистика
+    print("\n" + "="*60)
+    print("📊 ОБЩАЯ СТАТИСТИКА ОБРАБОТКИ:")
+    for name, data in results.items():
+        print(f"   {name}: найдено {data['num_boxes']} блоков")
+    print("="*60)
+    
+    return results
+
 
 
 
 # ==================== ЗАПУСК ============
 if __name__ == "__main__":
     # Параметры обработки
-    input_image = "./input_images/1.jpg"
+    # input_image = "./input_images/1.jpg"
+    input_dir = "./input_images"
     
     # Настройки для извлечения блоков
     dilation_size = 7       
@@ -676,22 +727,29 @@ if __name__ == "__main__":
     # Очищаем выходную папку
     clean_output_folder("./output_finish/")
 
+    batch_process(input_dir=input_dir, 
+                  output_dir="./output_finish/",
+                  dilation_size=dilation_size,
+                  min_size=min_size,
+                  ocr_padding=ocr_padding
+                  )
+
     # Запуск полной обработки
-    boxes, ocr_results = process_image_with_ocr(
-        img_path=input_image,
-        dilation_size=dilation_size,
-        std_multiplier=std_multiplier,
-        min_size=min_size,
-        output_dir="./output_finish/",
-        show_plots=True,
-        save_images=True,
-        ocr_padding=ocr_padding
-    )
+    # boxes, ocr_results = process_image_with_ocr(
+    #     img_path=input_image,
+    #     dilation_size=dilation_size,
+    #     std_multiplier=std_multiplier,
+    #     min_size=min_size,
+    #     output_dir="./output_finish/",
+    #     show_plots=True,
+    #     save_images=True,
+    #     ocr_padding=ocr_padding
+    # )
     
-    print("\n✨ ОБРАБОТКА ЗАВЕРШЕНА ✨")
-    print(f"📁 Результаты сохранены в папке: ./output_finish/")
-    print(f"   - ocr_results.json - результаты распознавания")
-    print(f"   - {Path(input_image).stem}_ocr_visualization.jpg - визуализация с текстом")
-    print(f"   - {Path(input_image).stem}_aligned.jpg - выравненное изображение")
-    print(f"   - {Path(input_image).stem}_boxes.jpg - найденные боксы")
-    print(f"   - debug/ - все промежуточные этапы")
+    # print("\n✨ ОБРАБОТКА ЗАВЕРШЕНА ✨")
+    # print(f"📁 Результаты сохранены в папке: ./output_finish/")
+    # print(f"   - ocr_results.json - результаты распознавания")
+    # print(f"   - {Path(input_image).stem}_ocr_visualization.jpg - визуализация с текстом")
+    # print(f"   - {Path(input_image).stem}_aligned.jpg - выравненное изображение")
+    # print(f"   - {Path(input_image).stem}_boxes.jpg - найденные боксы")
+    # print(f"   - debug/ - все промежуточные этапы")
