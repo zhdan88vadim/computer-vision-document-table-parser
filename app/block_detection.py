@@ -4,7 +4,7 @@ Block detection and extraction from images
 import cv2
 import numpy as np
 import random
-from typing import List, Tuple, Dict, Any
+from typing import List, Tuple, cast
 from scipy.ndimage import morphology as scipy_morph, label
 
 
@@ -21,11 +21,11 @@ class BlockDetector:
         """
         self.dilation_size = dilation_size
         self.min_size = min_size
-        self.debug_images = []
-        self.debug_names = []
-        self.debug_paths = []
+        self.debug_images: List[np.ndarray] = []
+        self.debug_names: List[str] = []
+        self.debug_paths: List[str] = []
     
-    def detect_blocks(self, img: np.ndarray, std_multiplier: float) -> Tuple[List[Tuple[int, int, int, int]], List[np.ndarray]]:
+    def detect_blocks(self, img: np.ndarray, std_multiplier: float) -> Tuple[List[Tuple[int, int, int, int]], List[np.ndarray], List[str]]:
         """
         Detect rectangular blocks in image
         
@@ -55,6 +55,9 @@ class BlockDetector:
         # 1. Dilation
         footprint = np.ones((self.dilation_size, self.dilation_size), dtype=bool)
         dilated = scipy_morph.grey_dilation(gray, footprint=footprint)
+        if not isinstance(dilated, np.ndarray):
+            dilated = np.array(dilated)
+                    
         self._add_debug(dilated, f"Dilation (kernel={self.dilation_size}x{self.dilation_size})", 
                         f"02_dilation_kernel_{self.dilation_size}")
         
@@ -68,7 +71,7 @@ class BlockDetector:
         std_val = gradient.std()
         threshold = mean_val + (std_val * std_multiplier)
         
-        print(f"Gradient statistics:")
+        print("Gradient statistics:")
         print(f"  - Mean value: {mean_val:.2f}")
         print(f"  - Standard deviation: {std_val:.2f}")
         print(f"  - Threshold (mean + {std_multiplier}*std): {threshold:.2f}")
@@ -92,7 +95,8 @@ class BlockDetector:
         
         # 7. Connected components
         # lbl, numcc = label(binary_closed)
-        lbl, numcc = label(binary)
+
+        lbl, numcc = cast(Tuple[np.ndarray, int], label(binary))
         
         # Label visualization
         lbl_colored = np.zeros((*lbl.shape, 3), dtype=np.uint8)
@@ -105,7 +109,7 @@ class BlockDetector:
         self._add_debug(lbl_colored, f"Connected components (total: {numcc})", 
                        f"07_connected_components_{numcc}")
         
-        print(f"Connected components:")
+        print("Connected components:")
         print(f"  - Total found: {numcc}")
         print(f"  - Minimum size: {self.min_size} pixels")
         

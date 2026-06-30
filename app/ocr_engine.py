@@ -3,7 +3,8 @@ OCR processing with EasyOCR
 """
 import numpy as np
 import json
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional, Union
+from pathlib import Path
 import easyocr
 
 
@@ -18,15 +19,34 @@ class OCRProcessor:
             languages: List of language codes
             use_gpu: Whether to use GPU
         """
-        self.languages = languages
-        self.use_gpu = use_gpu
-        self.reader = None
+        self.languages: List[str] = languages
+        self.use_gpu: bool = use_gpu
+        self.reader: Optional[easyocr.Reader] = None
     
-    def _initialize_reader(self):
+    def _initialize_reader(self) -> None:
         """Initialize EasyOCR reader if not already initialized"""
         if self.reader is None:
             print(f"Initializing EasyOCR ({'+'.join(self.languages)})...")
             self.reader = easyocr.Reader(self.languages, gpu=self.use_gpu, verbose=False)
+    
+    def _crop_block(self, image: np.ndarray, x: int, y: int, block_w: int, block_h: int, 
+                    padding: int) -> np.ndarray:
+        """
+        Crop a block from image with padding
+        
+        Returns:
+            Tuple of (cropped_image, x1, y1, x2, y2)
+        """
+        h, w = image.shape[:2]
+        
+        # Add padding with bounds checking
+        x1: int = max(0, x - padding)
+        y1: int = max(0, y - padding)
+        x2: int = min(w, x + block_w + padding)
+        y2: int = min(h, y + block_h + padding)
+        
+        # Crop block region
+        return image[y1:y2, x1:x2]
     
     def recognize_blocks(self, image: np.ndarray, blocks: List[Tuple[int, int, int, int]], 
                          padding: int = 10) -> List[Dict[str, Any]]:
@@ -43,21 +63,18 @@ class OCRProcessor:
         """
         self._initialize_reader()
         
+        if self.reader is None:
+            raise RuntimeError("Failed to initialize EasyOCR reader")
+        
         h, w = image.shape[:2]
-        results = []
+        results: List[Dict[str, Any]] = []
         
         print(f"Recognizing text in {len(blocks)} blocks...")
         print("-" * 50)
         
         for i, (x, y, block_w, block_h) in enumerate(blocks):
-            # Add padding
-            x1 = max(0, x - padding)
-            y1 = max(0, y - padding)
-            x2 = min(w, x + block_w + padding)
-            y2 = min(h, y + block_h + padding)
-            
-            # Crop block region
-            cropped = image[y1:y2, x1:x2]
+            # Crop block with padding
+            cropped = self._crop_block(image, x, y, block_w, block_h, padding)
             
             if cropped.size == 0:
                 results.append({
@@ -71,12 +88,12 @@ class OCRProcessor:
                 continue
             
             # Recognize text
-            ocr_result = self.reader.readtext(cropped)
+            ocr_result: List[Tuple[List[Tuple[int, int]], str, float]] = self.reader.readtext(cropped)
             
             if ocr_result:
                 # Combine all found texts
-                full_text = ' '.join([res[1] for res in ocr_result])
-                avg_confidence = sum([res[2] for res in ocr_result]) / len(ocr_result)
+                full_text: str = ' '.join([res[1] for res in ocr_result])
+                avg_confidence: float = sum([res[2] for res in ocr_result]) / len(ocr_result)
                 
                 results.append({
                     'box_index': i + 1,
@@ -101,35 +118,48 @@ class OCRProcessor:
         print("-" * 50)
         
         # Statistics
-        recognized = sum(1 for r in results if r['status'] == 'recognized')
-        no_text = sum(1 for r in results if r['status'] == 'no_text')
-        empty = sum(1 for r in results if r['status'] == 'empty')
+        recognized: int = sum(1 for r in results if r['status'] == 'recognized')
+        no_text: int = sum(1 for r in results if r['status'] == 'no_text')
+        empty: int = sum(1 for r in results if r['status'] == 'empty')
         
-        print(f"OCR STATISTICS:")
+        print("OCR STATISTICS:")
         print(f"  - Total blocks: {len(results)}")
         print(f"  - Recognized text: {recognized}")
         print(f"  - Text not found: {no_text}")
         print(f"  - Empty regions: {empty}")
         
         if recognized > 0:
-            avg_conf = sum(r['confidence'] for r in results if r['status'] == 'recognized') / recognized
+            avg_conf: float = sum(r['confidence'] for r in results if r['status'] == 'recognized') / recognized
             print(f"  - Average confidence: {avg_conf:.3f}")
         
         return results
     
-    def save_results(self, results: List[Dict[str, Any]], output_path: str) -> None:
+    def save_results(self, results: List[Dict[str, Any]], output_path: Union[str, Path]) -> None:
         """Save OCR results to JSON"""
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(results, f, indent=2, ensure_ascii=False, default=self._convert_numpy_types)
         print(f"OCR results saved to: {output_path}")
     
     @staticmethod
-    def _convert_numpy_types(obj):
-        """Convert numpy types to Python types for JSON serialization"""
+    def _convert_numpy_types(obj: Any) -> Any:
+        """
+        Convert numpy types to Python types for JSON serialization
+        
+        Args:
+            obj: Object to convert
+            
+        Returns:
+            JSON-serializable object
+            
+        Raises:
+            TypeError: If object type is not JSON serializable
+        """
         if isinstance(obj, np.integer):
             return int(obj)
         elif isinstance(obj, np.floating):
             return float(obj)
         elif isinstance(obj, np.ndarray):
             return obj.tolist()
+        elif isinstance(obj, np.bool_):
+            return bool(obj)
         raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
