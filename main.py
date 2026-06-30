@@ -61,13 +61,13 @@ class DocumentParser:
         print("\nSTEP 1: IMAGE ALIGNMENT")
         print("-" * 40)
         img_aligned = self.aligner.deskew_image(img)
-        self.visualizer.save_image(img_aligned, self.config.output_dir / f"{img_name}_aligned.jpg")
+        self.visualizer.save_image(img_aligned, self.config.debug_dir / f"{img_name}_aligned.jpg")
         
         # Step 2: Detect blocks
         print("\nSTEP 2: RECTANGULAR BLOCK EXTRACTION")
         print("-" * 40)
-        blocks, debug_images = self.detector.detect_blocks(img_aligned, self.config.std_multiplier)
-        self.visualizer.save_debug_images(debug_images, self.config.debug_dir, img_name)
+        blocks, debug_images, debug_paths = self.detector.detect_blocks(img_aligned, self.config.std_multiplier)
+        self.visualizer.save_debug_images(debug_images, debug_paths, self.config.debug_dir, img_name)
         
         # Create summary plot
         if hasattr(self.detector, 'debug_names'):

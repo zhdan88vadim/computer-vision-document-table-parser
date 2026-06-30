@@ -1,10 +1,8 @@
 """
 OCR processing with EasyOCR
 """
-import cv2
 import numpy as np
 import json
-import os
 from typing import List, Dict, Any, Tuple
 import easyocr
 

@@ -25,16 +25,6 @@ def clean_output_folder(output_dir: Path) -> None:
         print(f"Folder {output_dir} created")
 
 
-def ensure_directory(directory: Path) -> None:
-    """
-    Ensure directory exists, create if it doesn't
-    
-    Args:
-        directory: Path to directory
-    """
-    directory.mkdir(parents=True, exist_ok=True)
-
-
 def get_image_files(directory: Path, extensions: set = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff'}) -> list:
     """
     Get all image files in a directory

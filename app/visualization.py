@@ -1,6 +1,7 @@
 """
 Visualization utilities
 """
+import os
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -72,15 +73,12 @@ class Visualizer:
         cv2.imwrite(str(output_path), image)
         print(f"Image saved: {output_path}")
     
-    def save_debug_images(self, debug_images: List[np.ndarray], debug_dir: Path, img_name: str) -> None:
+    def save_debug_images(self, debug_images: List[np.ndarray], debug_paths: List[str], debug_dir: Path, img_name: str) -> None:
         """Save debug images to directory"""
-        debug_names = []
-        
-        # Save individual debug images
-        for i, img in enumerate(debug_images):
-            save_path = debug_dir / f"{img_name}_debug_{i:02d}.jpg"
-            cv2.imwrite(str(save_path), img)
-            debug_names.append(save_path.name)
+
+        for img, path in zip(debug_images, debug_paths):
+            save_path = os.path.join(debug_dir, f"{img_name}_{path}.jpg")        
+            cv2.imwrite(save_path, img)
         
         print(f"Saved {len(debug_images)} debug images to: {debug_dir}")
     

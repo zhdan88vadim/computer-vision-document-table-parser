@@ -25,7 +25,7 @@ class BlockDetector:
         self.debug_names = []
         self.debug_paths = []
     
-    def detect_blocks(self, img: np.ndarray, std_multiplier: float = 1.0) -> Tuple[List[Tuple[int, int, int, int]], List[np.ndarray]]:
+    def detect_blocks(self, img: np.ndarray, std_multiplier: float) -> Tuple[List[Tuple[int, int, int, int]], List[np.ndarray]]:
         """
         Detect rectangular blocks in image
         
@@ -81,17 +81,18 @@ class BlockDetector:
         self._add_debug(binary_display, f"Binarization (threshold={threshold:.2f})", 
                        f"04_binary_threshold_{threshold:.2f}")
         
-        # 5. Inverted binary
-        binary_inv = cv2.bitwise_not(binary_display)
-        self._add_debug(binary_inv, "Inverted binary", "05_binary_inverted")
+        # # 5. Inverted binary
+        # binary_inv = cv2.bitwise_not(binary_display)
+        # self._add_debug(binary_inv, "Inverted binary", "05_binary_inverted")
         
-        # 6. Morphological operations
-        kernel = np.ones((3, 3), np.uint8)
-        binary_closed = cv2.morphologyEx(binary_display, cv2.MORPH_CLOSE, kernel)
-        self._add_debug(binary_closed, "Morphological closing (3x3)", "06_morphological_close")
+        # # 6. Morphological operations
+        # kernel = np.ones((3, 3), np.uint8)
+        # binary_closed = cv2.morphologyEx(binary_display, cv2.MORPH_CLOSE, kernel)
+        # self._add_debug(binary_closed, "Morphological closing (3x3)", "06_morphological_close")
         
         # 7. Connected components
-        lbl, numcc = label(binary_closed // 255)
+        # lbl, numcc = label(binary_closed)
+        lbl, numcc = label(binary)
         
         # Label visualization
         lbl_colored = np.zeros((*lbl.shape, 3), dtype=np.uint8)
@@ -153,7 +154,7 @@ class BlockDetector:
         
         print(f"Found {filtered_count} blocks, rejected {rejected_count}")
         
-        return boxes_coords, self.debug_images
+        return boxes_coords, self.debug_images, self.debug_paths
     
     def _add_debug(self, img: np.ndarray, name: str, path: str) -> None:
         """Add image to debug collection"""
