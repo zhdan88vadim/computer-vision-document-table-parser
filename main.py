@@ -81,7 +81,7 @@ class DocumentParser:
         print("\nSTEP 3: TEXT RECOGNITION (EasyOCR)")
         print("-" * 40)
         ocr_results = self.ocr.recognize_blocks(img_aligned, blocks, self.config.ocr_padding)
-        self.ocr.save_results(ocr_results, self.config.output_dir / "ocr_results.json")
+        self.ocr.save_results(ocr_results, str(self.config.output_dir / "ocr_results.json"))
         
         # Step 4: Map fields
         print("\nSTEP 4: FIELD MAPPING")
@@ -141,7 +141,7 @@ class DocumentParser:
         return results
 
 
-def main():
+def main() -> None:
     """Main entry point"""
     # Load configuration
     config = Config()

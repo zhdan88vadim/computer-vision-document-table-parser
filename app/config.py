@@ -50,7 +50,7 @@ class Config:
         'Рассмотрение на рабочей комиссии': ''
     })
     
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Create directories if they don't exist"""
         self.input_dir.mkdir(parents=True, exist_ok=True)
         self.output_dir.mkdir(parents=True, exist_ok=True)

@@ -7,13 +7,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
-from typing import List, Dict, Any, Tuple, Optional
+from typing import List, Dict, Any, Tuple, Union
 
 
 class Visualizer:
     """Handles visualization of processing results"""
     
-    def __init__(self):
+    def __init__(self) -> None:
         self.font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
     
     def draw_boxes(self, image: np.ndarray, blocks: List[Tuple[int, int, int, int]], 
@@ -32,7 +32,7 @@ class Visualizer:
         
         # Load font
         try:
-            font = ImageFont.truetype(self.font_path, 16)
+            font: Union[ImageFont.FreeTypeFont, ImageFont.ImageFont] = ImageFont.truetype(self.font_path, 16)
         except:
             font = ImageFont.load_default()
             print("Warning: Cyrillic font not found, using default")

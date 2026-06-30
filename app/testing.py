@@ -3,7 +3,7 @@ Testing and validation utilities
 """
 import json
 from pathlib import Path
-from typing import Dict, Any, Tuple, Optional
+from typing import Dict, Any, Tuple, List
 from fuzzywuzzy import fuzz
 
 
@@ -19,9 +19,9 @@ class Tester:
             output_dir: Directory to save test results
             min_score: Minimum similarity score for passing
         """
-        self.expected_dir = expected_dir
-        self.output_dir = output_dir
-        self.min_score = min_score
+        self.expected_dir: Path = expected_dir
+        self.output_dir: Path = output_dir
+        self.min_score: int = min_score
         
         # Create output directory
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -36,14 +36,19 @@ class Tester:
         Returns:
             Dictionary of expected field values
         """
-        json_path = self.expected_dir / f"{image_name}.json"
+        json_path: Path = self.expected_dir / f"{image_name}.json"
         if not json_path.exists():
             raise FileNotFoundError(f"Expected results file not found: {json_path}")
         
         with open(json_path, 'r', encoding='utf-8') as f:
-            return json.load(f)
+            data: Dict[str, Any] = json.load(f)
+            return {k: str(v) for k, v in data.items()}
     
-    def compare_results(self, actual: Dict[str, str], expected: Dict[str, str]) -> Tuple[bool, list, dict]:
+    def compare_results(
+        self, 
+        actual: Dict[str, str], 
+        expected: Dict[str, str]
+    ) -> Tuple[bool, List[str], Dict[str, Any]]:
         """
         Compare actual results with expected using fuzzy matching
         
@@ -54,8 +59,8 @@ class Tester:
         Returns:
             Tuple of (success, errors, details)
         """
-        errors = []
-        details = {}
+        errors: List[str] = []
+        details: Dict[str, Any] = {}
         
         for key in expected:
             if key not in actual:
@@ -63,8 +68,8 @@ class Tester:
                 details[key] = {'status': 'missing'}
                 continue
             
-            exp = expected[key] or ""
-            act = actual[key] or ""
+            exp: str = expected[key] or ""
+            act: str = actual.get(key) or ""
             
             # If both are empty - ok
             if not exp and not act:
@@ -72,12 +77,12 @@ class Tester:
                 continue
             
             # Calculate similarity using different methods
-            score_ratio = fuzz.ratio(act, exp)
-            score_partial = fuzz.partial_ratio(act, exp)
-            score_token = fuzz.token_sort_ratio(act, exp)
+            score_ratio: int = fuzz.ratio(act, exp)
+            score_partial: int = fuzz.partial_ratio(act, exp)
+            score_token: int = fuzz.token_sort_ratio(act, exp)
             
             # Take maximum
-            score = max(score_ratio, score_partial, score_token)
+            score: int = max(score_ratio, score_partial, score_token)
             
             details[key] = {
                 'status': 'match' if score >= self.min_score else 'mismatch',
@@ -105,7 +110,10 @@ class Tester:
             Test results dictionary
         """
         try:
-            expected_data = self.load_expected_data(image_name)
+            expected_data: Dict[str, str] = self.load_expected_data(image_name)
+            success: bool
+            errors: List[str]
+            details: Dict[str, Any]
             success, errors, details = self.compare_results(actual_data, expected_data)
             
             print(f"\n{'✅' if success else '❌'} Test {image_name}: {'PASSED' if success else 'FAILED'}")
@@ -116,21 +124,24 @@ class Tester:
                     print(f"   - {error}")
             
             # Statistics
-            total = len(details)
-            matches = sum(1 for d in details.values() if d.get('status') == 'match')
-            mismatches = sum(1 for d in details.values() if d.get('status') == 'mismatch')
+            total: int = len(details)
+            matches: int = sum(1 for d in details.values() if d.get('status') == 'match')
+            mismatches: int = sum(1 for d in details.values() if d.get('status') == 'mismatch')
             
-            print(f"\n   STATISTICS:")
+            print("\n   STATISTICS:")
             print(f"   - Total fields: {total}")
             print(f"   - Matches: {matches}")
             print(f"   - Mismatches: {mismatches}")
             
             if matches > 0:
-                avg_score = sum(d.get('score', 0) for d in details.values() if d.get('status') == 'match') / matches
+                avg_score: float = sum(
+                    d.get('score', 0) for d in details.values() 
+                    if d.get('status') == 'match'
+                ) / matches
                 print(f"   - Average similarity: {avg_score:.1f}%")
             
             # Save result
-            result = {
+            result: Dict[str, Any] = {
                 "image": image_name,
                 "success": success,
                 "min_score": self.min_score,
@@ -143,7 +154,7 @@ class Tester:
                 }
             }
             
-            output_path = self.output_dir / f"{image_name}_result.json"
+            output_path: Path = self.output_dir / f"{image_name}_result.json"
             with open(output_path, 'w', encoding='utf-8') as f:
                 json.dump(result, f, indent=2, ensure_ascii=False)
             
